@@ -13402,7 +13402,14 @@ void MegaApiImpl::putnodes_result(error e, targettype_t t, NewNode* nn)
         }
         else
         {
-            transfer->setState(MegaTransfer::STATE_FAILED);
+            if (e == API_EBLOCKED)
+            {
+                transfer->setState(MegaTransfer::STATE_PAUSED);
+            }
+            else
+            {
+                transfer->setState(MegaTransfer::STATE_FAILED);
+            }
         }
 
         DBTableTransactionCommitter committer(client->tctable);
