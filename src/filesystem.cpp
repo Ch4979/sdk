@@ -77,6 +77,51 @@ const char *FileSystemAccess::fstypetostring(FileSystemType type) const
     return "UNKNOWN FS";
 }
 
+FileSystemType FileSystemAccess::getlocalfstype(const LocalPath& path) const
+{
+    // Not enough information to determine path.
+    if (path.empty())
+    {
+        return FS_UNKNOWN;
+    }
+
+    FileSystemType type;
+
+    // Try and get the type from the path we were given.
+    if (getlocalfstype(path, type))
+    {
+        // Path exists.
+        return type;
+    }
+
+    // Does our path denote a directory?
+    if (path.endsInSeparator(*this))
+    {
+        // Directory doesn't exist.
+        return FS_UNKNOWN;
+    }
+
+    // Try and get the type based on our parent's path.
+    auto index = path.getLeafnameByteIndex(*this);
+
+    // Path is relative and target doesn't exist.
+    if (index == 0)
+    {
+        return FS_UNKNOWN;
+    }
+
+    LocalPath parentPath(path);
+    parentPath.truncate(index);
+
+    if (getlocalfstype(parentPath, type))
+    {
+        return type;
+    }
+
+    return FS_UNKNOWN;
+}
+
+#if 0
 FileSystemType FileSystemAccess::getlocalfstype(const LocalPath& dstPath) const
 {
     if (dstPath.empty())
@@ -192,6 +237,7 @@ FileSystemType FileSystemAccess::getlocalfstype(const LocalPath& dstPath) const
 #endif
     return FS_UNKNOWN;
 }
+#endif
 
 bool FileSystemAccess::isControlChar(unsigned char c) const
 {
@@ -243,17 +289,7 @@ bool FileSystemAccess::islocalfscompatible(unsigned char c, bool isEscape, FileS
 
 FileSystemType FileSystemAccess::getFilesystemType(const LocalPath& dstPath) const
 {
-    // first get "valid" path (no last leaf name, in case it is not in the FS?)
-    LocalPath validPath = dstPath;
-
-    if (!validPath.endsInSeparator(*this))
-    {
-        size_t leafIndex = validPath.getLeafnameByteIndex(*this);
-        if (leafIndex > 0)
-            validPath.truncate(leafIndex);
-    }
-
-    return getlocalfstype(validPath);
+    return getlocalfstype(dstPath);
 }
 
 // replace characters that are not allowed in local fs names with a %xx escape sequence
@@ -286,7 +322,7 @@ void FileSystemAccess::escapefsincompatible(string* name, FileSystemType fileSys
             name->replace(i, 1, buf);
             LOG_debug << "Escape incompatible character for filesystem type "
                       << fstypetostring(fileSystemType)
-                      << ", replace '" << std::string(&incompatibleChar, 1) << "' by '" << buf << "'\n";
+                      << ", replace '" << incompatibleChar << "' by '" << buf << "'\n";
         }
         i += utf8seqsize;
     }
