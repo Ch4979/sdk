@@ -22,11 +22,6 @@
 #ifndef MEGA_FILESYSTEM_H
 #define MEGA_FILESYSTEM_H 1
 
-#if defined(_WIN32) || defined(WINDOWS_PHONE)
-#include <winsock2.h>
-#include <Windows.h>
-#endif
-
 #include "types.h"
 #include "utils.h"
 #include "waiter.h"
